@@ -1,0 +1,10 @@
+# Copyright (C) 2026 AERA Recovery Project contributors
+# SPDX-License-Identifier: Apache-2.0
+
+AERA_MAINTAINER := Jonas Salo & Daniel Springer
+AERA_SCREEN_H := 2160
+AERA_STATUS_H := 100
+AERA_OPTIONS_LIST_NUM := 6
+AERA_WORKAROUND_BACKUP_BUG := 1
+AERA_NO_TREBLE_COMPATIBILITY_CHECK := 1
+AERA_ENABLE_WLAN := 1

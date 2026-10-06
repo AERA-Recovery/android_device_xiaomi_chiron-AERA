@@ -18,4 +18,6 @@ PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/twrp_chiron.mk
 
 COMMON_LUNCH_CHOICES := \
+    twrp_chiron-user \
+    twrp_chiron-userdebug \
     twrp_chiron-eng

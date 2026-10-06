@@ -26,10 +26,75 @@
 #
 
 import /init.recovery.qcom_decrypt.rc
+import /init.recovery.wifi.rc
 
 on fs
-    wait /dev/block/platform/soc/1da4000.ufshc
-    symlink /dev/block/platform/soc/1da4000.ufshc /dev/block/bootdevice
+    wait /dev/block/platform/soc/${ro.boot.bootdevice}
+    symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
+    wait /dev/block/bootdevice/by-name/cust
+    mount erofs /dev/block/bootdevice/by-name/cust /mnt/vendor_gpu ro
+    wait /dev/block/bootdevice/by-name/persist
+    wait /dev/block/bootdevice/by-name/modem
+    mkdir /mnt/vendor/persist 0755 root root
+    mkdir /mnt/modem_firmware 0755 root root
+    mkdir /vendor/firmware_mnt 0755 root root
+    mkdir /firmware 0755 root root
+    mount ext4 /dev/block/bootdevice/by-name/persist /mnt/vendor/persist noatime
+    mount vfat /dev/block/bootdevice/by-name/modem /vendor/firmware_mnt ro
+    mount none /vendor/firmware_mnt/image /mnt/modem_firmware bind rec
+    symlink /vendor/firmware_mnt/image /firmware/image
+    mount none /mnt/vendor_gpu/firmware /vendor/firmware bind rec
+    mkdir /vendor/lib64/egl 0755 root root
+    symlink /system/lib64/android.hardware.keymaster@3.0-impl.so /vendor/lib64/hw/android.hardware.keymaster@3.0-impl.so
+    # libhardware rejects HAL symlinks resolving outside vendor/lib64/hw.
+    # Copy the installed ROM's small HAL into RAM; keep large GPU libs mounted.
+    copy /mnt/vendor_gpu/lib64/hw/gralloc.msm8998.so /vendor/lib64/hw/gralloc.msm8998.so
+    symlink /mnt/vendor_gpu/lib64/egl/libEGL_adreno.so /vendor/lib64/egl/libEGL_adreno.so
+    symlink /mnt/vendor_gpu/lib64/egl/libGLESv2_adreno.so /vendor/lib64/egl/libGLESv2_adreno.so
+    symlink /mnt/vendor_gpu/lib64/libadreno_utils.so /vendor/lib64/libadreno_utils.so
+    symlink /mnt/vendor_gpu/lib64/libgsl.so /vendor/lib64/libgsl.so
+    symlink /mnt/vendor_gpu/lib64/libllvm-glnext.so /vendor/lib64/libllvm-glnext.so
+
+    # Vendor radio clients must share AERA's Binder implementation with the
+    # recovery vndservicemanager. Expose only their Qualcomm-specific
+    # dependencies from the installed ROM; leave the common Binder/runtime
+    # libraries supplied by recovery.
+    symlink /mnt/vendor_gpu/lib64/libcld80211.so /vendor/lib64/libcld80211.so
+    symlink /mnt/vendor_gpu/lib64/libidl.so /vendor/lib64/libidl.so
+    symlink /mnt/vendor_gpu/lib64/libmdmdetect.so /vendor/lib64/libmdmdetect.so
+    symlink /mnt/vendor_gpu/lib64/libperipheral_client.so /vendor/lib64/libperipheral_client.so
+    symlink /mnt/vendor_gpu/lib64/libqmi_cci.so /vendor/lib64/libqmi_cci.so
+    symlink /mnt/vendor_gpu/lib64/libqmi_common_so.so /vendor/lib64/libqmi_common_so.so
+    symlink /mnt/vendor_gpu/lib64/libqmi_csi.so /vendor/lib64/libqmi_csi.so
+    symlink /mnt/vendor_gpu/lib64/libqmi_encdec.so /vendor/lib64/libqmi_encdec.so
+    symlink /mnt/vendor_gpu/lib64/libqmiservices.so /vendor/lib64/libqmiservices.so
+
+    # The installed WLAN firmware directory contains an absolute link back to
+    # /vendor/etc. Recovery does not mount cust as /vendor, so recreate that
+    # target while continuing to consume the ROM's own configuration file.
+    mkdir /vendor/etc/wifi 0755 root root
+    symlink /mnt/vendor_gpu/etc/wifi/WCNSS_qcom_cfg.ini /vendor/etc/wifi/WCNSS_qcom_cfg.ini
+    symlink /mnt/vendor_gpu/etc/wifi/wpa_supplicant.conf /vendor/etc/wifi/wpa_supplicant.conf
+
+    # ueventd is started before recovery's fs action. Restart it after the
+    # installed firmware partitions are mounted so its private mount namespace
+    # can service modem and WLAN firmware requests from those paths.
+    stop ueventd
+    exec u:r:recovery:s0 root root -- /system/bin/sleep 2
+    start ueventd
+    exec u:r:recovery:s0 root root -- /system/bin/sleep 2
+
+    # MSM8998's WLAN probe waits for IPC Router security configuration. Run
+    # the installed utility first; its completion starts the remaining modem
+    # and WLAN transport stack from init.recovery.wifi.rc.
+    symlink /mnt/vendor_gpu/etc/qmi_fw.conf /vendor/etc/qmi_fw.conf
+    start aera-irsc-util
+
+on init
+    mkdir /mnt/vendor_gpu 0755 root root
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/egl:/vendor/lib64/hw:/mnt/vendor_gpu/lib64:/mnt/vendor_gpu/lib64/egl
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller "a800000.dwc3"
 
 on boot
     # Enable OTG

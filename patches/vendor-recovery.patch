@@ -1,0 +1,20 @@
+diff --git a/aera_soong_config.mk b/aera_soong_config.mk
+index 14df36f4f7cfa29e6acee0526ad5ff60231f96c0..ce8e6f5940066f31846945de2e6e613cd1b82ec0 100644
+--- a/aera_soong_config.mk
++++ b/aera_soong_config.mk
+@@ -16,6 +16,7 @@
+ # getMakeVars() in the recovery *_defaults reads exactly these names.
+ $(call add_soong_config_var,twrpVarsPlugin,\
+     AERA_UI_ADAPTIVE_RESOLUTION \
++    AERA_UI_LEGACY_KGSL_GPU \
+     AERA_SCREEN_H \
+     AERA_STATUS_H \
+     AERA_STATUS_INDENT_LEFT \
+@@ -23,6 +24,7 @@ $(call add_soong_config_var,twrpVarsPlugin,\
+     AERA_DEFAULT_LANGUAGE \
+     AERA_EXTRA_LANGUAGES \
+     TW_SUPPORT_INPUT_FF_HAPTICS \
++    TW_USE_FSCRYPT_POLICY \
+     OF_ENABLE_WLAN \
+     OF_ENABLE_LAB \
+     OF_LANDSCAPE_MODE \

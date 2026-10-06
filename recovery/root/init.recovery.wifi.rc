@@ -1,0 +1,127 @@
+# Recovery Wi-Fi bring-up for MSM8998. The device kernel contains qcacld, but
+# its firmware runs inside the modem WLAN user-PD. Keep vendor executables and
+# libraries on the installed read-only vendor mount.
+
+on property:init.svc.aera-irsc-util=stopped
+    # Qualcomm's modem TFTP server expects Android's RFS routing layout before
+    # the modem is brought online. Chiron cannot decrypt /data in recovery, so
+    # give the vendor daemons a session-only writable /data/vendor overlay.
+    mkdir /data/vendor 0771 root root
+    mount tmpfs tmpfs /data/vendor mode=0771,uid=0,gid=0
+    mkdir /tmp/rfs-ramdumps 0770 root system
+    mkdir /tmp/rfs-ramdumps/modem 0770 root system
+    mkdir /data/vendor/tombstones 0770 root system
+    mkdir /data/vendor/tombstones/rfs 0770 root system
+    mkdir /data/vendor/tombstones/rfs/modem 0770 root system
+    mkdir /data/vendor/tombstones/rfs/lpass 0770 root system
+    mkdir /data/vendor/tombstones/rfs/tn 0770 root system
+    mkdir /data/vendor/tombstones/rfs/slpi 0770 root system
+    mkdir /data/vendor/tombstones/rfs/cdsp 0770 root system
+    mkdir /data/vendor/tombstones/rfs/wpss 0770 root system
+    mkdir /vendor/rfs 0755 root root
+    mkdir /vendor/rfs/msm 0755 root root
+    mkdir /vendor/rfs/msm/mpss 0755 root root
+    mkdir /vendor/rfs/msm/mpss/readonly 0755 root root
+    mkdir /vendor/rfs/msm/mpss/readonly/vendor 0755 root root
+    symlink /mnt/vendor/persist/hlos_rfs/shared /vendor/rfs/msm/mpss/hlos
+    symlink /tmp/rfs-ramdumps/modem /vendor/rfs/msm/mpss/ramdumps
+    symlink /vendor/firmware_mnt /vendor/rfs/msm/mpss/readonly/firmware
+    symlink /mnt/vendor_gpu/firmware /vendor/rfs/msm/mpss/readonly/vendor/firmware
+    symlink /mnt/vendor/persist/rfs/msm/mpss /vendor/rfs/msm/mpss/readwrite
+    symlink /mnt/vendor/persist/rfs/shared /vendor/rfs/msm/mpss/shared
+
+    chown system system /dev/subsys_modem
+    chmod 0640 /dev/subsys_modem
+    chown wifi wifi /dev/wlan
+    chmod 0660 /dev/wlan
+    # Bring up every firmware transport before the peripheral manager votes
+    # the modem online. WLAN's userspace client starts only after that event.
+    start aera-rmt-storage
+    start aera-qrtr-ns
+    start aera-pd-mapper
+    start aera-tftp-server
+    start aera-peripheral-manager
+
+on property:sys.aera.wlan.up=1
+    setprop sys.aera.wlan.up 0
+    start aera-cnss-daemon
+    start aera-wlan-driver
+    start wpa_supplicant
+
+on property:init.svc.aera-peripheral-manager=running
+    start aera-peripheral-proxy
+
+on property:vendor.peripheral.modem.state=ONLINE
+    start aera-cnss-daemon
+    start aera-wlan-driver
+
+on property:wifi.driver.ready=true
+    mkdir /tmp/recovery 0777 root root
+    mkdir /tmp/recovery/sockets 0777 root root
+    start wpa_supplicant
+
+service aera-irsc-util /mnt/vendor_gpu/bin/irsc_util /mnt/vendor_gpu/etc/sec_config
+    disabled
+    oneshot
+    user root
+    seclabel u:r:recovery:s0
+
+service aera-rmt-storage /mnt/vendor_gpu/bin/rmt_storage
+    disabled
+    user root
+    setenv LD_LIBRARY_PATH /mnt/vendor_gpu/lib64:/system/lib64:/vendor/lib64
+    seclabel u:r:recovery:s0
+
+service aera-pd-mapper /mnt/vendor_gpu/bin/pd-mapper
+    disabled
+    user root
+    setenv LD_LIBRARY_PATH /mnt/vendor_gpu/lib64:/system/lib64:/vendor/lib64
+    seclabel u:r:recovery:s0
+
+service aera-peripheral-manager /mnt/vendor_gpu/bin/pm-service
+    disabled
+    user system
+    group system
+    capabilities NET_BIND_SERVICE
+    ioprio rt 4
+    seclabel u:r:recovery:s0
+
+service aera-peripheral-proxy /mnt/vendor_gpu/bin/pm-proxy
+    disabled
+    user system
+    group system
+    seclabel u:r:recovery:s0
+
+service aera-qrtr-ns /mnt/vendor_gpu/bin/qrtr-ns -f
+    disabled
+    user oem_2906
+    group oem_2906
+    capabilities NET_BIND_SERVICE
+    setenv LD_LIBRARY_PATH /mnt/vendor_gpu/lib64:/system/lib64:/vendor/lib64
+    seclabel u:r:recovery:s0
+
+service aera-tftp-server /mnt/vendor_gpu/bin/tftp_server
+    disabled
+    user root
+    setenv LD_LIBRARY_PATH /mnt/vendor_gpu/lib64:/system/lib64:/vendor/lib64
+    seclabel u:r:recovery:s0
+
+service aera-cnss-daemon /mnt/vendor_gpu/bin/cnss-daemon -n -l
+    disabled
+    user system
+    group system inet net_admin wifi
+    capabilities NET_ADMIN
+    seclabel u:r:recovery:s0
+
+service aera-wlan-driver /system/bin/sh -c "printf 'ON\\000' > /dev/wlan; until test -e /sys/class/net/wlan0; do sleep 1; done; setprop wifi.driver.ready true"
+    disabled
+    oneshot
+    user root
+    group root wifi
+    seclabel u:r:recovery:s0
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -dd -O/tmp/recovery/sockets -c/vendor/etc/wifi/wpa_supplicant.conf
+    disabled
+    user root
+    group root wifi inet net_admin
+    seclabel u:r:recovery:s0

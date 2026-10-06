@@ -27,4 +27,17 @@ LOCAL_PATH := $(call my-dir)
 
 ifneq ($(filter chiron,$(TARGET_DEVICE)),)
 include $(call all-makefiles-under,$(LOCAL_PATH))
+
+# The legacy bootloader cannot reliably unpack a recovery image containing
+# both AERA's WLAN stack and the 4.8 MiB incompressible rclone executable.
+# Keep WLAN itself and omit only the optional NAS transport on this target.
+CHIRON_RCLONE_OUT := $(TARGET_RECOVERY_ROOT_OUT)/system/bin/rclone
+CHIRON_RAMDISK_TRIM_STAMP := $(TARGET_RECOVERY_ROOT_OUT)/.chiron-ramdisk-trim
+
+$(CHIRON_RAMDISK_TRIM_STAMP): $(CHIRON_RCLONE_OUT)
+	@echo "Chiron: omitting rclone to stay within the legacy recovery boot limit"
+	@rm -f $(CHIRON_RCLONE_OUT) && touch $@
+
+$(PRODUCT_OUT)/obj/PACKAGING/recovery_intermediates/ramdisk_files-timestamp: \
+    $(CHIRON_RAMDISK_TRIM_STAMP)
 endif

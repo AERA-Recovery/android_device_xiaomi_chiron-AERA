@@ -1,0 +1,7 @@
+bootable/recovery	9675ebb6191bdb97dfe3e01facd029f339d72cc3	bootable-recovery.patch
+bootable/recovery	9675ebb6191bdb97dfe3e01facd029f339d72cc3	bootable-recovery-runtime.patch.gz
+device/qcom/twrp-common	98506f7919102378c8d52ee7d6a94a867f1b4c55	qcom-twrp-common.patch
+external/lvgl	212fd3a25187f9876356ae66aa13103b002bc322	lvgl.patch
+system/core	081c119b3e2182831f0d5b03e8b003279c9a7f13	system-core.patch
+system/vold	36bb8ce4fbbb4615f3d87638347c59eface0853b	system-vold.patch
+vendor/recovery	5f3ef3d5b1e6ab6ab773a8d93a9144d3105359a8	vendor-recovery.patch

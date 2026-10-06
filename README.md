@@ -1,6 +1,18 @@
-# device_xiaomi_chiron-twrp
+# AERA Recovery for Xiaomi Mi MIX 2 (chiron)
 
-Tree for building OrangeFox for Xiaomi Mi MIX 2
+Experimental **Official Alpha** device tree for AERA Android 16.
+Original device-tree history and contributor credits are retained.
+
+The current bring-up boots and decrypts the tested crDroid Android 16 install,
+connects to Wi-Fi, and uses the legacy Adreno 540/KGSL display path. This is not
+a claim of compatibility with every Chiron ROM. Browser/plugin startup is
+still unresolved; packaging the sandbox launcher alone does not fix it.
+
+All local shared-source changes from this bring-up are saved in `patches/`,
+including GPU/UI work, legacy decryption support, and the existing browser
+runtime delta. See [patch instructions](patches/README.md) for exact source
+base commits and application instructions. They are not applied automatically
+by `vendorsetup.sh` and have not been pushed to the shared source repositories.
 
 The Xiaomi Mi MIX 2 (codenamed "Chiron") is a high-end smartphone from Xiaomi.
 
@@ -10,15 +22,23 @@ Forked From:https://github.com/0ranko0P/twrp_device_xiaomi_sagit
 
 ## To compile
 
+Place this tree at `device/xiaomi/chiron` in an AERA Android 16 checkout.
+Use the source revisions recorded in `patches/series.tsv`, then run from the
+source root:
+
+```sh
+bash device/xiaomi/chiron/patches/apply.sh --check
+bash device/xiaomi/chiron/patches/apply.sh
 source build/envsetup.sh
+lunch twrp_chiron-bp2a-eng
+mka recoveryimage
+```
 
-export ALLOW_MISSING_DEPENDENCIES=true
-
-export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
-
-export LC_ALL="C"
-
-lunch twrp_chiron-eng && mka recoveryimage
+Expected image: `out/target/product/chiron/AERA-R1.0-Alpha-Official-chiron.img`.
+The prebuilt kernel is from the Android 16 crDroid bring-up baseline. Matching
+installed vendor/modem firmware is required. Optional NAS transport (`rclone`)
+and offline root-provider payloads are omitted to stay within the tested
+legacy recovery boot limits. Browser plugins have not been modified here.
 
 ## Device specifications
 

@@ -1,0 +1,3 @@
+# Unified diffs intentionally include context-only spaces and tab prefixes.
+patches/*.patch -whitespace
+patches/*.gz -text -diff

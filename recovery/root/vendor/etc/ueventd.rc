@@ -1,0 +1,13 @@
+# MSM8998 WLAN firmware is split between the installed vendor image and the
+# modem partition. Both paths exist before the driver is requested.
+firmware_directories /mnt/modem_firmware/ /mnt/vendor_gpu/firmware/
+
+/dev/wlan                 0660 wifi   wifi
+/dev/subsys_*             0640 system system
+/dev/ramdump*             0640 system system
+/dev/diag                 0666 system oem_2901
+/dev/smd11                0660 radio  radio
+/dev/smd7                 0660 bluetooth bluetooth
+/dev/smdcntl8             0640 radio  radio
+/dev/adsprpc-smd          0664 system system
+/dev/sdsprpc-smd          0660 system system
