@@ -23,6 +23,7 @@ if [ "$1" = "$FDEVICE" ] || [ "$AERA_BUILD_DEVICE" = "$FDEVICE" ]; then
     export AERA_BUILD_STATUS=Official
     export AERA_BUILD_TYPE=Alpha
     export AERA_VANILLA_BUILD=1
+    export AERA_ENABLE_ROOT_MANAGER=0
     export AERA_ALLOW_EARLY_SETTINGS_LOAD=1
     export AERA_DELETE_AROMAFM=1
     export AERA_DELETE_MAGISK_ADDON=1
