@@ -67,6 +67,8 @@ on property:sys.usb.config=mtp,adb
 
 # AERA's main init.rc handles adb/sideload FunctionFS binding. Rebinding
 # those functions here disconnects adbd and repeatedly retriggers ffs.ready.
+# minadbd owns the ADB FunctionFS endpoint during sideload. The recovery
+# sideload code stops adbd before switching USB into this mode.
 
 on property:sys.usb.config=mtp
     write /config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "mtp"
@@ -89,5 +91,3 @@ on property:sys.usb.ffs.ready=1 && property:sys.usb.config=mtp,adb
     write /config/usb_gadget/g1/UDC ${sys.usb.controller}
     setprop sys.usb.state ${sys.usb.config}
 
-on property:sys.usb.config=sideload
-    start adbd
